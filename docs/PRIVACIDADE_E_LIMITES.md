@@ -1,0 +1,15 @@
+# Privacidade e limites reais
+- Funcionamento offline por padrão. O botão Neon abre login/opções, sem sincronização automática.
+- Para enviar dados à nuvem, usuário deve autenticar e confirmar o envio de cada relatório.
+- Dados sincronizados: fabricante, modelo, versão do Android, sondas de hardware, temperaturas/leituras, testes e evidências ADB filtradas.
+- Não coletamos IMEI, contatos, números de série, coordenadas GPS, áudio gravado, fotografias ou senha persistida.
+- Cookies, senhas e JWT são armazenados apenas em memória durante a sessão ativa do app.
+- Neon usa RLS; cada linha da conta tem owner_id com checagem de JWT.
+- Região Neon: AWS us-east-1. Em uso da nuvem, os dados ficam em servidores terceiros nos EUA.
+- Exclusão pelo app: apaga registros ligados aos aparelhos do usuário, não remove a conta Neon Auth.
+- Os relatórios locais PDF e JSON ficam no destino escolhido. O bucket privado no Neon está reservado e **não recebe PDFs nesta versão**.
+- A identificação de modelo, hardware ou driver não demonstra originalidade física.
+- Mesmo ADB, Shizuku ou root não podem criar um certificado de procedência inexistente no OEM.
+- Qualquer 'incompatibilidade' com ficha técnica pode decorrer de driver, configuração, unidade de medida, atualização de software, variante regional ou módulo substituído; exige validação adicional.
+- Temperaturas de CPU/GPU podem não estar acessíveis. O gráfico ativo acompanha exclusivamente temperatura da bateria.
+- Risco de calor excessivo: se o aparelho estiver desconfortavelmente quente, pare jogos e carregamento; não execute testes de estresse.

@@ -1,26 +1,48 @@
 # CPU-Z Android
 
-Aplicativo nativo Android de diagnóstico geral de dispositivos, com coleta local de informações de hardware, testes guiados e relatórios PDF/JSON.
+Aplicativo nativo Android de diagnóstico geral de hardware, temperatura, bateria e componentes, com relatórios locais e backend Neon **opcional**.
 
-## Recursos implementados
-- Identificação de aparelho, Android, atualização de segurança, CPU/SoC e ABI
-- Bateria: nível, temperatura, saúde informada pelo sistema, tensão, corrente e ciclos (se disponibilizados)
-- Estado térmico do Android, RAM, armazenamento e tela
-- Câmeras reconhecidas, sensores e seus fabricantes declarados, conectividade e recursos
-- Testes guiados de tela, multitouch, alto-falante, vibração, microfone, câmera, flash, GPS, acelerômetro e botões
-- Relatórios PDF e JSON exportados localmente pelo seletor de documentos do Android
-- Situação dos componentes marcada como **não verificável** quando não há atestado confiável
+## Funcionalidades
+- Identificação do dispositivo, Android, processador/SoC, núcleos, RAM, armazenamento, tela e conectividade
+- Bateria (temperatura, tensão, corrente, ciclos se fornecidos, carregamento e saúde declarada pelo sistema)
+- Sondas extras **somente leitura** em fontes OEM acessíveis de `/sys/class/power_supply` e `/sys/devices/system/cpu`
+- Estado térmico, margem térmica (quando disponível), gráficos de temperatura de bateria em tempo real **sem teste de estresse**
+- Inventário de câmeras, modos de tela, sensores e dispositivos de áudio
+- Testes guiados de tela, multitouch, microfone, alto-falante, vibração, câmera, lanterna, GPS, acelerômetro, botões e conector
+- Importação de relatórios ADB de texto **selecionados pelo usuário**, somente com campos permitidos
+- Histórico local privado e comparação com a medição anterior
+- Exportação **PDF e JSON** pelo seletor de arquivos
+- Conta opcional **Neon Auth**, envio manual confirmado, histórico na nuvem, análise térmica via SQL e comparação com fichas técnicas oficiais
 
-## Limites importantes
-**O Android não oferece uma API pública universal que comprove se tela, bateria, câmeras ou outras peças são originais.** Modelo, fabricante declarado, presença de sensor, número de câmeras e funcionamento não demonstram autenticidade ou ausência de troca. O app **nunca** afirma 'original' ou 'falsificada' sem uma evidência verificável do fabricante.
+## Infraestrutura em produção
+- **Neon PostgreSQL 18**: `red-tooth-82407441`, banco `neondb`, branch `main`
+- **Managed Better Auth**: login por e-mail e senha, com verificação de código OTP
+- **Neon Data API** (PostgREST): acesso JWT com Row-Level Security, proprietário isolado por `auth.user_id()`
+- **8 tabelas públicas** e esquema privado de atestações OEM
+- Bucket `diagnostic-reports` **privado e reservado**. O APK atual **não faz upload de PDF para o bucket**; envia dados JSON do diagnóstico à Data API somente com autorização explícita.
+- Arquivos SQL versionados em `database/` e fonte oficial Motorola Edge 50 Pro incluída
 
-A saúde e os ciclos da bateria podem não estar disponíveis em alguns aparelhos. Temperatura da bateria não é temperatura do processador; estado térmico é informado pelo Android. Testes guiados podem depender da confirmação do usuário. Este app não faz medições clínicas nem certificação de componentes.
+## Proteção de dados
+**Offline por padrão.** Nenhuma leitura é enviada automaticamente ao abrir o aplicativo. O usuário decide criar conta e deve confirmar cada envio. O app não solicita IMEI, número de série, contatos, coordenadas GPS para salvar, foto capturada nem gravações de microfone. Senhas, cookies e JWTs são utilizados apenas em memória durante a sessão e não persistidos pelo aplicativo. O relatório local é salvo somente após a seleção de destino. Os dados sincronizados ficam na região AWS `us-east-1` do projeto Neon.
 
-## Privacidade
-Não usa rede, não possui backend nem coleta identificação sensível (IMEI, número de série ou contatos). Áudio do teste de microfone é amostrado em memória e não é salvo. Foto do teste de câmera permanece no app de câmera. Os relatórios são criados apenas no local escolhido pelo usuário.
+O usuário pode remover os próprios registros na nuvem pela interface. A conta de autenticação não é apagada pela ação de apagar históricos. Veja `docs/PRIVACIDADE_E_LIMITES.md`.
 
-## Compilar e instalar
-Projeto Java 17, Android Gradle Plugin 8.7.3, Gradle 8.9, compileSdk 35, minSdk 26. Abra no Android Studio ou use a aba **Actions** deste repositório para baixar o artefato de APK `CPU-Z-Android-debug` depois de um build bem-sucedido. APK de debug é para teste e não equivale a uma versão assinada de produção.
+## Limitações obrigatórias
+As APIs públicas do Android e os dumps do ADB **não certificam se uma peça é original, substituída ou falsa**. A comparação com especificações oficiais é apenas indicativa; variações de firmware, componentes da mesma linha, unidades de medidas, drivers e configurações podem produzir diferenças sem defeito. Certificação confiável exige evidências de procedência verificadas pelo fabricante ou avaliação técnica.
 
-## Estado
-Versão inicial funcional: exige compilação/validação em um Android real antes de considerar os testes homologados.
+Temperatura de **bateria** não é temperatura de CPU/GPU. Algumas medições OEM podem estar bloqueadas; nesse caso o app informa `indisponível`. O modo ADB somente importa um texto, não executa comandos nem eleva privilégios. O bucket privado está preparado, mas **backup/upload de PDF ainda não é uma funcionalidade do APK**.
+
+## Compilar
+- Java 17 / AGP 8.7.3 / Gradle 8.9 / compileSdk 35 / minSdk 26.
+- Na aba **Actions** do GitHub, abra o build **Android APK** mais recente que terminou com sucesso.
+- Baixe o artefato `CPU-Z-Android-debug` e instale `app-debug.apk`.
+- É um APK de desenvolvimento, não uma versão assinada para publicação na Play Store.
+
+A compilação automatizada valida o código, **não substitui testes de sensores em um dispositivo real**. Consulte `docs/VALIDACAO.md`.
+
+## Organização
+- `app/src/main/java/com/conexaostreet/cpuzandroid/`: app, diagnósticos, nuvem e relatórios
+- `database/`: schema, políticas e catálogo OEM com fontes
+- `docs/`: validação, privacidade e instruções ADB
+
+Copyright: este projeto não é afiliado à CPUID nem à Motorola. A marca CPU-Z pode estar protegida em determinadas regiões; verifique os direitos de uso antes de uma publicação comercial.
