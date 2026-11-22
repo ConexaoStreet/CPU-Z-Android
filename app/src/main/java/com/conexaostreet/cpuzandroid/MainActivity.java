@@ -103,8 +103,12 @@ public class MainActivity extends Activity {
         extra.setOrientation(LinearLayout.HORIZONTAL);
         extra.addView(action("Salvar local",()->saveLocal(),1));
         extra.addView(action("Comparar",()->compareLocal(),1));
-        extra.addView(action("Neon",()->CloudDialog.open(this,cloud,snapshot,testResults()),1));
+        extra.addView(action("Monitor",()->ThermalMonitorDialog.show(this),1));
+        LinearLayout cloudActions=new LinearLayout(this);
+        cloudActions.addView(action("Neon • Conta, sincronização e referência oficial",
+            ()->CloudDialog.open(this,cloud,snapshot,testResults()),1));
         body.addView(extra);
+        body.addView(cloudActions);
         TextView caution=label("Atenção: nenhum app Android comum consegue atestar automaticamente se uma peça foi trocada ou é original. Resultados não verificáveis são identificados.",12,MUTED,false);
         caution.setPadding(dp(7),dp(16),dp(7),dp(14));body.addView(caution);
         sectionTitle("TESTES DE FUNCIONAMENTO");
