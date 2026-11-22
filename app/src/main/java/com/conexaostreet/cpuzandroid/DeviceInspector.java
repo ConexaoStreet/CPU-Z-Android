@@ -79,6 +79,7 @@ public final class DeviceInspector {
         for(String piece:new String[]{"Tela / painel","Bateria","Câmeras","Placa lógica / processador","Porta USB-C","Alto-falantes e microfones","Sensores","Memória e armazenamento"}) {
             put(out,"Peças e originalidade",piece,"NÃO VERIFICÁVEL (necessita dados/autenticação do fabricante ou inspeção técnica)");
         }
+        AdvancedHardwareInspector.add(c,out);
         return out;
     }
     static void put(LinkedHashMap<String,LinkedHashMap<String,String>> out,String section,String k,String v){
