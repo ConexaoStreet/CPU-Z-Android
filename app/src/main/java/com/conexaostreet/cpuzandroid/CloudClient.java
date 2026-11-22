@@ -264,7 +264,7 @@ final class CloudClient {
         }
         return result.toString();
     }
-    String officialReference() throws Exception{
+    String officialReference(LinkedHashMap<String,LinkedHashMap<String,String>> scan) throws Exception{
         String model=Build.MODEL.toLowerCase(Locale.ROOT).replace("motorola","").trim();
         String manufacturer=Build.MANUFACTURER.toLowerCase(Locale.ROOT);
         String path="/hardware_catalog?select=component_category,expected_attributes,official_source_url"
@@ -272,15 +272,7 @@ final class CloudClient {
             +"&model=ilike."+java.net.URLEncoder.encode(model,"UTF-8")
             +"&order=component_category.asc";
         JSONArray rows=new JSONArray(request(false,"GET",path,null,null));
-        if(rows.length()==0)return "Nenhuma ficha técnica oficial cadastrada para este modelo. Isso não indica defeito.";
-        StringBuilder out=new StringBuilder("Referência de fábrica, não prova de originalidade.\n\n");
-        for(int i=0;i<rows.length();i++){
-            JSONObject item=rows.getJSONObject(i);
-            out.append(item.getString("component_category")).append(": ")
-                .append(item.getJSONObject("expected_attributes").toString()).append("\n\n");
-        }
-        out.append("Fonte: ").append(rows.getJSONObject(0).optString("official_source_url"));
-        return out.toString();
+        return ComponentComparator.compare(rows,scan);
     }
     void deleteAllMyScans() throws Exception {
         request(false,"DELETE","/devices?id=not.is.null",null,"return=minimal");
