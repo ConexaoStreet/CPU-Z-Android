@@ -35,7 +35,7 @@ final class CloudDialog {
                     case 0: consent(host,cloud,scan,tests);break;
                     case 1: work(host,"Histórico",cloud::recentScans,null);break;
                     case 2: work(host,"Tendência térmica",()->cloud.thermalTrend(host.getApplicationContext()),null);break;
-                    case 3: work(host,"Ficha técnica",cloud::officialReference,null);break;
+                    case 3: work(host,"Comparação com ficha técnica",()->cloud.officialReference(scan),null);break;
                     case 4: delete(host,cloud);break;
                     case 5: work(host,"Sair",()->{cloud.signOut();return "Sessão encerrada.";},null);break;
                     default:break;
