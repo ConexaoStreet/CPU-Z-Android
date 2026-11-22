@@ -239,6 +239,18 @@ final class CloudClient {
         }
         return runId;
     }
+    String thermalTrend(Context c) throws Exception{
+        JSONObject payload=new JSONObject().put("p_installation_id",installationId(c));
+        String answer=request(false,"POST","/rpc/my_thermal_trend",payload.toString(),null);
+        JSONObject j=new JSONObject(answer);
+        if(j.optInt("samples",0)==0)return "Nenhuma amostra térmica sincronizada para esta instalação.";
+        return "Amostras: "+j.optInt("samples")+"\\n"
+            +"Mínima (bateria): "+j.optString("min_battery_c","indisponível")+" °C\\n"
+            +"Média (bateria): "+j.optString("avg_battery_c","indisponível")+" °C\\n"
+            +"Máxima (bateria): "+j.optString("max_battery_c","indisponível")+" °C\\n"
+            +"Estados térmicos elevados: "+j.optInt("severe_thermal_events")+"\\n\\n"
+            +j.optString("interpretation");
+    }
     String recentScans() throws Exception{
         String resp=request(false,"GET","/diagnostic_runs?select=id,captured_at,status,battery_temperature_c,thermal_severity&order=captured_at.desc&limit=15",null,null);
         JSONArray rows=new JSONArray(resp);if(rows.length()==0)return "Nenhum diagnóstico salvo ainda.";
