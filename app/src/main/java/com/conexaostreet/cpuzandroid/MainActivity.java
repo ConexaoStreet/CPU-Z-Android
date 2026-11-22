@@ -42,6 +42,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.LinearLayout;
+import android.widget.ImageView;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -55,8 +56,9 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class MainActivity extends Activity {
-    private static final int BG=Color.rgb(11,17,26),CARD=Color.rgb(22,32,45),EDGE=Color.rgb(40,57,72);
-    private static final int TEXT=Color.rgb(232,243,246),MUTED=Color.rgb(164,182,190),ACCENT=Color.rgb(98,214,203);
+    // Paleta alternável: preto/vermelho ou branco/vermelho.
+    private int BG,CARD,EDGE,TEXT,MUTED,ACCENT;
+    private boolean lightTheme;
     private static final int REQ_MIC=100,REQ_CAMERA=101,REQ_GPS=102,REQ_PHOTO=103,REQ_PDF=201,REQ_JSON=202,REQ_ADB=301;
     private final Handler handler=new Handler(Looper.getMainLooper());
     private final String[] testNames={"Tela - cores e pixels","Toque e multitouch","Alto-falante","Vibração",
@@ -70,10 +72,33 @@ public class MainActivity extends Activity {
 
     @Override public void onCreate(Bundle b){
         super.onCreate(b);
-        getWindow().setStatusBarColor(BG);getWindow().setNavigationBarColor(BG);
         prefs=getSharedPreferences("diagnostics",MODE_PRIVATE);
-        cloud=new CloudClient();
+        lightTheme=BrandTheme.isLight(this);
+        setTheme(lightTheme?R.style.AppThemeLight:R.style.AppTheme);
+        applyVisualTheme();
+        Object retained=getLastNonConfigurationInstance();
+        cloud=retained instanceof CloudClient?(CloudClient)retained:new CloudClient();
         refresh();
+    }
+    @Override public Object onRetainNonConfigurationInstance(){
+        return cloud; // preserva a sessão em memória ao alternar o tema
+    }
+    private void applyVisualTheme(){
+        BG=BrandTheme.background(lightTheme);
+        CARD=BrandTheme.surface(lightTheme);
+        EDGE=BrandTheme.border(lightTheme);
+        TEXT=BrandTheme.text(lightTheme);
+        MUTED=BrandTheme.muted(lightTheme);
+        ACCENT=BrandTheme.RED;
+        getWindow().setStatusBarColor(BG);
+        getWindow().setNavigationBarColor(BG);
+        getWindow().getDecorView().setSystemUiVisibility(
+            lightTheme?(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR|View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR):0
+        );
+    }
+    private void switchTheme(){
+        BrandTheme.setLight(this,!lightTheme);
+        recreate();
     }
     @Override protected void onPause(){super.onPause();turnOffFlash();}
     private void refresh(){snapshot=DeviceInspector.inspect(this);render();}
@@ -90,9 +115,40 @@ public class MainActivity extends Activity {
         ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);scroll.setBackgroundColor(BG);
         body=new LinearLayout(this);body.setOrientation(LinearLayout.VERTICAL);
         body.setPadding(dp(17),dp(22),dp(17),dp(34));scroll.addView(body);
-        TextView title=label("CPU-Z  Android",28,TEXT,true);body.addView(title);
-        TextView subtitle=label("Diagnóstico local de hardware • "+Build.MODEL,13,MUTED,false);
-        subtitle.setPadding(0,dp(4),0,dp(18));body.addView(subtitle);
+        // Cabeçalho com a logo original e a mesma composição da identidade visual aprovada.
+        LinearLayout header=new LinearLayout(this);
+        header.setGravity(Gravity.CENTER_VERTICAL);
+        header.setOrientation(LinearLayout.HORIZONTAL);
+        ImageView logo=new ImageView(this);
+        logo.setImageResource(R.drawable.logo_mark);
+        logo.setColorFilter(lightTheme?ACCENT:Color.WHITE);
+        logo.setContentDescription("Logotipo CPU-Z Android");
+        logo.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        LinearLayout.LayoutParams logoParams=new LinearLayout.LayoutParams(dp(54),dp(54));
+        logoParams.rightMargin=dp(10);
+        header.addView(logo,logoParams);
+        LinearLayout brand=new LinearLayout(this);brand.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout titleRow=new LinearLayout(this);titleRow.setOrientation(LinearLayout.HORIZONTAL);
+        titleRow.addView(label("CPU-Z",23,TEXT,true));
+        titleRow.addView(label(" Android",23,ACCENT,true));
+        brand.addView(titleRow);
+        TextView tagline=label("DIAGNÓSTICO DO DISPOSITIVO",10,MUTED,true);
+        tagline.setLetterSpacing(0.07f);
+        tagline.setPadding(0,dp(4),0,0);
+        brand.addView(tagline);
+        header.addView(brand,new LinearLayout.LayoutParams(0,-2,1));
+        TextView theme=label(lightTheme?"☀ Claro":"☾ Escuro",12,ACCENT,true);
+        theme.setGravity(Gravity.CENTER);
+        theme.setPadding(dp(9),dp(12),dp(9),dp(12));
+        GradientDrawable themeBg=fill(CARD,12);
+        themeBg.setStroke(dp(1),EDGE);
+        theme.setBackground(themeBg);
+        theme.setContentDescription(lightTheme?"Ativar tema escuro":"Ativar tema claro");
+        theme.setOnClickListener(v->switchTheme());
+        header.addView(theme,new LinearLayout.LayoutParams(-2,dp(44)));
+        body.addView(header);
+        TextView subtitle=label("Diagnóstico de hardware • "+Build.MODEL,12,MUTED,false);
+        subtitle.setPadding(dp(3),dp(7),0,dp(18));body.addView(subtitle);
         addSummary();
         LinearLayout buttons=new LinearLayout(this);buttons.setOrientation(LinearLayout.HORIZONTAL);
         buttons.addView(action("Atualizar",()->refresh(),1));
@@ -147,26 +203,39 @@ public class MainActivity extends Activity {
         value.setPadding(0,dp(12),0,dp(5));card.addView(value);
         TextView desc=label("Estado térmico: "+(thermal==null?"Indisponível":thermal),13,MUTED,false);card.addView(desc);
         if(thermal!=null&&(thermal.contains("Elevado")||thermal.contains("Crítico")||thermal.contains("Emergência")||thermal.contains("Desligamento"))){
-            TextView warning=label("ATENÇÃO: restrição térmica informada. Interrompa tarefas pesadas e o carregamento até esfriar.",13,Color.rgb(255,178,117),true);
+            TextView warning=label("ATENÇÃO: restrição térmica informada. Interrompa tarefas pesadas e o carregamento até esfriar.",13,Color.rgb(255,95,95),true);
             warning.setPadding(0,dp(12),0,0);card.addView(warning);
         }
         body.addView(card);
     }
     private LinearLayout card(){
         LinearLayout l=new LinearLayout(this);l.setOrientation(LinearLayout.VERTICAL);
-        l.setPadding(dp(15),dp(15),dp(15),dp(15));
+        l.setPadding(dp(16),dp(15),dp(16),dp(15));
         GradientDrawable bg=fill(CARD,14);bg.setStroke(dp(1),EDGE);l.setBackground(bg);
         LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,-2);lp.bottomMargin=dp(12);
         l.setLayoutParams(lp);return l;
     }
     private void sectionTitle(String title){
-        TextView t=label(title,12,MUTED,true);t.setPadding(dp(3),dp(18),0,dp(11));body.addView(t);
+        LinearLayout row=new LinearLayout(this);row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setPadding(dp(2),dp(20),0,dp(12));
+        View stripe=new View(this);stripe.setBackground(fill(ACCENT,3));
+        row.addView(stripe,new LinearLayout.LayoutParams(dp(4),dp(19)));
+        TextView t=label(title,12,TEXT,true);t.setPadding(dp(10),0,0,0);
+        row.addView(t);
+        body.addView(row);
     }
     private Button action(String text,Runnable onClick,int weight){
-        Button b=new Button(this);b.setAllCaps(false);b.setText(text);b.setTextSize(13);
-        b.setTextColor(BG);b.setBackground(fill(ACCENT,10));
-        LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(0,dp(47),weight);
-        p.setMargins(dp(3),dp(2),dp(3),dp(2));b.setLayoutParams(p);
+        Button b=new Button(this);b.setAllCaps(false);b.setText(text);
+        b.setTextSize(text.length()>32?11:13);
+        boolean primary=text.equals("PDF")||text.equals("Monitor");
+        GradientDrawable surface=fill(primary?ACCENT:CARD,11);
+        if(!primary)surface.setStroke(dp(1),ACCENT);
+        b.setBackground(surface);
+        b.setTextColor(primary?Color.WHITE:ACCENT);
+        b.setTypeface(android.graphics.Typeface.DEFAULT,android.graphics.Typeface.BOLD);
+        LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(0,dp(49),weight);
+        p.setMargins(dp(3),dp(3),dp(3),dp(3));b.setLayoutParams(p);
         b.setOnClickListener(v->onClick.run());return b;
     }
     private void addTest(String name,String detail,Runnable action){
