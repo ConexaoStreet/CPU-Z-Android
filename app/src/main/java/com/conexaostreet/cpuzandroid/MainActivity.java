@@ -63,6 +63,7 @@ public class MainActivity extends Activity {
         "Microfone","Câmera","Lanterna / flash","GPS","Acelerômetro","Botões de volume","Porta de carregamento"};
     private LinkedHashMap<String,LinkedHashMap<String,String>> snapshot;
     private SharedPreferences prefs;
+    private CloudClient cloud;
     private LinearLayout body;
     private String flashId=null;
     private CameraManager flashManager=null;
@@ -71,6 +72,7 @@ public class MainActivity extends Activity {
         super.onCreate(b);
         getWindow().setStatusBarColor(BG);getWindow().setNavigationBarColor(BG);
         prefs=getSharedPreferences("diagnostics",MODE_PRIVATE);
+        cloud=new CloudClient();
         refresh();
     }
     @Override protected void onPause(){super.onPause();turnOffFlash();}
@@ -97,6 +99,12 @@ public class MainActivity extends Activity {
         buttons.addView(action("PDF",()->saveReport(REQ_PDF),1));
         buttons.addView(action("JSON",()->saveReport(REQ_JSON),1));
         body.addView(buttons);
+        LinearLayout extra=new LinearLayout(this);
+        extra.setOrientation(LinearLayout.HORIZONTAL);
+        extra.addView(action("Salvar local",()->saveLocal(),1));
+        extra.addView(action("Comparar",()->compareLocal(),1));
+        extra.addView(action("Neon",()->CloudDialog.open(this,cloud,snapshot,testResults()),1));
+        body.addView(extra);
         TextView caution=label("Atenção: nenhum app Android comum consegue atestar automaticamente se uma peça foi trocada ou é original. Resultados não verificáveis são identificados.",12,MUTED,false);
         caution.setPadding(dp(7),dp(16),dp(7),dp(14));body.addView(caution);
         sectionTitle("TESTES DE FUNCIONAMENTO");
@@ -361,6 +369,16 @@ public class MainActivity extends Activity {
         intent.setType(kind==REQ_PDF?"application/pdf":"application/json");
         intent.putExtra(Intent.EXTRA_TITLE,"CPUZ_diagnostico_"+suffix+(kind==REQ_PDF?".pdf":".json"));
         try{startActivityForResult(intent,kind);}catch(Exception e){info("Relatório","Seletor de arquivos indisponível: "+e.getMessage());}
+    }
+    private void saveLocal(){
+        try{
+            LocalHistory.save(this,snapshot,testResults());
+            info("Histórico local","Diagnóstico salvo apenas no armazenamento privado deste aplicativo.");
+        }catch(Exception e){info("Histórico local","Não foi possível salvar: "+e.getMessage());}
+    }
+    private void compareLocal(){
+        try{info("Comparação com diagnóstico anterior",LocalHistory.summary(this,snapshot));}
+        catch(Exception e){info("Histórico local","Não foi possível comparar: "+e.getMessage());}
     }
     private LinkedHashMap<String,String> testResults(){
         LinkedHashMap<String,String> out=new LinkedHashMap<>();
