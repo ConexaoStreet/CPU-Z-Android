@@ -27,16 +27,17 @@ final class CloudDialog {
                 .setNegativeButton("Cancelar",null).show();
             return;
         }
-        String[] options={"Enviar diagnóstico agora","Ver histórico na nuvem","Consultar ficha técnica do modelo",
-            "Apagar todos os meus dados na nuvem","Sair da conta"};
+        String[] options={"Enviar diagnóstico agora","Ver histórico na nuvem","Analisar tendência térmica",
+            "Consultar ficha técnica do modelo","Apagar todos os meus dados na nuvem","Sair da conta"};
         new AlertDialog.Builder(host).setTitle("Neon • "+cloud.accountEmail())
             .setItems(options,(d,w)->{
                 switch(w){
                     case 0: consent(host,cloud,scan,tests);break;
                     case 1: work(host,"Histórico",cloud::recentScans,null);break;
-                    case 2: work(host,"Ficha técnica",cloud::officialReference,null);break;
-                    case 3: delete(host,cloud);break;
-                    case 4: work(host,"Sair",()->{cloud.signOut();return "Sessão encerrada.";},null);break;
+                    case 2: work(host,"Tendência térmica",()->cloud.thermalTrend(host.getApplicationContext()),null);break;
+                    case 3: work(host,"Ficha técnica",cloud::officialReference,null);break;
+                    case 4: delete(host,cloud);break;
+                    case 5: work(host,"Sair",()->{cloud.signOut();return "Sessão encerrada.";},null);break;
                     default:break;
                 }
             }).setNegativeButton("Fechar",null).show();
