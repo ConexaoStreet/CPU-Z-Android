@@ -57,7 +57,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class MainActivity extends Activity {
     private static final int BG=Color.rgb(11,17,26),CARD=Color.rgb(22,32,45),EDGE=Color.rgb(40,57,72);
     private static final int TEXT=Color.rgb(232,243,246),MUTED=Color.rgb(164,182,190),ACCENT=Color.rgb(98,214,203);
-    private static final int REQ_MIC=100,REQ_CAMERA=101,REQ_GPS=102,REQ_PHOTO=103,REQ_PDF=201,REQ_JSON=202;
+    private static final int REQ_MIC=100,REQ_CAMERA=101,REQ_GPS=102,REQ_PHOTO=103,REQ_PDF=201,REQ_JSON=202,REQ_ADB=301;
     private final Handler handler=new Handler(Looper.getMainLooper());
     private final String[] testNames={"Tela - cores e pixels","Toque e multitouch","Alto-falante","Vibração",
         "Microfone","Câmera","Lanterna / flash","GPS","Acelerômetro","Botões de volume","Porta de carregamento"};
@@ -105,6 +105,7 @@ public class MainActivity extends Activity {
         extra.addView(action("Comparar",()->compareLocal(),1));
         extra.addView(action("Monitor",()->ThermalMonitorDialog.show(this),1));
         LinearLayout cloudActions=new LinearLayout(this);
+        cloudActions.addView(action("Importar ADB",()->importAdb(),1));
         cloudActions.addView(action("Neon • Conta, sincronização e referência oficial",
             ()->CloudDialog.open(this,cloud,snapshot,testResults()),1));
         body.addView(extra);
@@ -366,6 +367,13 @@ public class MainActivity extends Activity {
             info("Porta de carregamento","Conecte um carregador seguro, aguarde o Android reconhecer a alimentação e toque no teste novamente. Isso não avalia desgaste físico da porta.");
         }
     }
+    private void importAdb(){
+        Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        i.addCategory(Intent.CATEGORY_OPENABLE);
+        i.setType("text/plain");
+        try{startActivityForResult(i,REQ_ADB);}
+        catch(Exception e){info("Importar ADB","Nenhum seletor de arquivos disponível.");}
+    }
     private void saveReport(int kind){
         String suffix=new SimpleDateFormat("yyyyMMdd_HHmm",Locale.ROOT).format(new Date());
         Intent intent=new Intent(Intent.ACTION_CREATE_DOCUMENT);
@@ -391,6 +399,18 @@ public class MainActivity extends Activity {
     }
     @Override protected void onActivityResult(int req,int result,Intent data){
         super.onActivityResult(req,result,data);
+        if(req==REQ_ADB){
+            if(result==RESULT_OK && data!=null && data.getData()!=null){
+                try(java.io.InputStream in=getContentResolver().openInputStream(data.getData())){
+                    if(in==null)throw new IllegalStateException("Arquivo não disponível");
+                    LinkedHashMap<String,String> evidence=AdbEvidenceParser.parse(in);
+                    snapshot.put("Evidências ADB importadas",evidence);
+                    render();
+                    info("Importação concluída",evidence.size()+" campos analisados. Os dados aparecem no inventário e nos relatórios. Um arquivo ADB não comprova originalidade.");
+                }catch(Exception e){info("Importar ADB","Falha: "+e.getMessage());}
+            }
+            return;
+        }
         if(req==REQ_PHOTO){
             if(result==RESULT_OK)confirm("Câmera","A câmera abriu e conseguiu capturar uma imagem corretamente?");
             else info("Câmera","Teste cancelado ou sem confirmação de captura.");
