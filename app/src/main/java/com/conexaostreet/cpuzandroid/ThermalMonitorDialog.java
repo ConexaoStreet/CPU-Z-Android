@@ -31,20 +31,25 @@ final class ThermalMonitorDialog {
         LinearLayout layout=new LinearLayout(a);layout.setOrientation(LinearLayout.VERTICAL);
         int pad=(int)(18*a.getResources().getDisplayMetrics().density);
         layout.setPadding(pad,pad,pad,pad);
-        layout.setBackgroundColor(Color.rgb(11,17,26));
+        final boolean light=BrandTheme.isLight(a);
+        layout.setBackgroundColor(BrandTheme.background(light));
         TextView title=new TextView(a);title.setText("Monitor térmico em tempo real");
-        title.setTextSize(20);title.setTextColor(Color.WHITE);layout.addView(title);
-        TextView value=new TextView(a);value.setTextSize(29);value.setTextColor(Color.rgb(98,214,203));
+        title.setTextSize(20);title.setTextColor(BrandTheme.text(light));layout.addView(title);
+        TextView value=new TextView(a);value.setTextSize(29);value.setTextColor(BrandTheme.RED);
         value.setPadding(0,pad,0,pad/2);layout.addView(value);
-        TextView note=new TextView(a);note.setTextSize(13);note.setTextColor(Color.LTGRAY);
+        TextView note=new TextView(a);note.setTextSize(13);note.setTextColor(BrandTheme.muted(light));
         note.setText("Leitura passiva da bateria. Não mede temperatura da CPU nem certifica defeito.");
         layout.addView(note);
         ArrayList<Float> readings=new ArrayList<>();
         ChartView graph=new ChartView(a,readings);
         layout.addView(graph,new LinearLayout.LayoutParams(-1,(int)(210*a.getResources().getDisplayMetrics().density)));
-        TextView stats=new TextView(a);stats.setTextColor(Color.LTGRAY);stats.setTextSize(13);
+        TextView stats=new TextView(a);stats.setTextColor(BrandTheme.muted(light));stats.setTextSize(13);
         stats.setPadding(0,pad/2,0,pad);layout.addView(stats);
-        Button close=new Button(a);close.setText("Fechar monitor");layout.addView(close);
+        Button close=new Button(a);close.setText("Fechar monitor");
+        close.setTextColor(Color.WHITE);
+        android.graphics.drawable.GradientDrawable red=new android.graphics.drawable.GradientDrawable();
+        red.setColor(BrandTheme.RED);red.setCornerRadius(pad/2f);
+        close.setBackground(red);layout.addView(close);
         dialog.setContentView(layout);
         if(dialog.getWindow()!=null)dialog.getWindow().setLayout(-1,-2);
         close.setOnClickListener(v->dialog.dismiss());
@@ -73,7 +78,7 @@ final class ThermalMonitorDialog {
                         "Mín: %.1f °C  •  Máx: %.1f °C\nEstado térmico Android: %s\nAmostras: %d (intervalo 2 s)",
                         min[0],max[0],status,readings.size()));
                     if(temp>=45f) {
-                        note.setTextColor(Color.rgb(255,169,113));
+                        note.setTextColor(light?BrandTheme.RED_DARK:Color.rgb(255,100,100));
                         note.setText("Temperatura da bateria elevada: interrompa jogos e carregamento até esfriar. Esta faixa é orientativa.");
                     }
                     graph.invalidate();
@@ -87,18 +92,19 @@ final class ThermalMonitorDialog {
     private static final class ChartView extends View {
         final ArrayList<Float> points;
         final Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);
-        ChartView(Activity a,ArrayList<Float> values){super(a);points=values;}
+        final boolean light;
+        ChartView(Activity a,ArrayList<Float> values){super(a);points=values;light=BrandTheme.isLight(a);}
         @Override protected void onDraw(Canvas c){
             super.onDraw(c);
             int w=getWidth(),h=getHeight();
             if(w<=0||h<=0)return;
             int left=36,top=22,right=w-18,bottom=h-27;
-            p.setColor(Color.rgb(40,60,70));p.setStrokeWidth(1);p.setStyle(Paint.Style.STROKE);
+            p.setColor(BrandTheme.border(light));p.setStrokeWidth(1);p.setStyle(Paint.Style.STROKE);
             for(int i=0;i<=4;i++){
                 float y=top+(bottom-top)*i/4f;
                 c.drawLine(left,y,right,y,p);
             }
-            p.setColor(Color.LTGRAY);p.setTextSize(24);p.setStyle(Paint.Style.FILL);
+            p.setColor(BrandTheme.muted(light));p.setTextSize(24);p.setStyle(Paint.Style.FILL);
             c.drawText("Bateria (°C)",left,16,p);
             if(points.size()<2){c.drawText("Coletando dados…",left+8,(top+bottom)/2f,p);return;}
             float low=Float.MAX_VALUE,high=-Float.MAX_VALUE;
@@ -106,7 +112,7 @@ final class ThermalMonitorDialog {
             low=(float)Math.floor(Math.min(low,25f)-2);
             high=(float)Math.ceil(Math.max(high,45f)+2);
             if(high-low<5)high=low+5;
-            p.setColor(Color.rgb(98,214,203));p.setStrokeWidth(4);p.setStyle(Paint.Style.STROKE);
+            p.setColor(BrandTheme.RED);p.setStrokeWidth(4);p.setStyle(Paint.Style.STROKE);
             float dx=(right-left)/(float)(Math.max(points.size()-1,1));
             for(int i=1;i<points.size();i++){
                 float x1=left+dx*(i-1),x2=left+dx*i;
@@ -114,7 +120,7 @@ final class ThermalMonitorDialog {
                 float y2=bottom-(points.get(i)-low)/(high-low)*(bottom-top);
                 c.drawLine(x1,y1,x2,y2,p);
             }
-            p.setStyle(Paint.Style.FILL);p.setColor(Color.LTGRAY);p.setTextSize(22);
+            p.setStyle(Paint.Style.FILL);p.setColor(BrandTheme.muted(light));p.setTextSize(22);
             c.drawText(String.format(Locale.getDefault(),"%.0f°",high),left+2,top+25,p);
             c.drawText(String.format(Locale.getDefault(),"%.0f°",low),left+2,bottom-8,p);
         }

@@ -2,6 +2,14 @@
 
 Aplicativo nativo Android de diagnóstico geral de hardware, temperatura, bateria e componentes, com relatórios locais e backend Neon **opcional**.
 
+## Identidade visual
+- Tema escuro: **preto #000000, vermelho #E60000 e branco**.
+- Tema claro: **branco #FFFFFF, vermelho #E60000 e preto**.
+- Cinza neutro para textos de apoio e vermelho escuro #8B0000 para variações.
+- Logo original do proprietário vetorizada em `res/drawable/logo_mark.xml`, aplicada no cabeçalho e no ícone adaptativo do Android.
+- Alterne os temas pelo controle **Claro / Escuro** no cabeçalho; preferência salva localmente.
+- Não foram modificados o fluxo de diagnóstico, permissões de testes, banco Neon ou formatos de relatório nesta mudança visual.
+
 ## Funcionalidades
 - Identificação do dispositivo, Android, processador/SoC, núcleos, RAM, armazenamento, tela e conectividade
 - Bateria (temperatura, tensão, corrente, ciclos se fornecidos, carregamento e saúde declarada pelo sistema)
